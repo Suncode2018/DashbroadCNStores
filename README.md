@@ -68,3 +68,50 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+##################
+✨ ฟีเจอร์หลัก
+🔐 ระบบ Authentication
+
+ไม่ต้อง Login เพื่อดู Dashboard
+บังคับ Login เฉพาะตอน Export ข้อมูล
+Profile management พร้อม avatar
+
+🎨 UI/UX Design
+
+Modern & Clean Design ใช้ Tailwind CSS
+Responsive Design รองรับทุกขนาดหน้าจอ
+ธีมสีน้ำเงิน-ส้ม สวยงามและเป็นมิตรกับผู้ใช้
+Smooth Animations และ transitions
+
+📊 Dashboard Components
+
+Navbar - แสดง logo, profile menu
+Sidebar - เมนูนำทางหลัก (แดชบอร์ด, สาขา, ยอดขาย, รายงาน)
+Dashboard - แสดงข้อมูลสรุปและยอดขายแต่ละสาขา
+Export Function - ปุ่ม Export ที่จะเปิด Login dialog หากยังไม่ได้ล็อกอิน
+
+📱 Components Structure
+
+Navbar.js - Navigation bar พร้อม user menu
+SideDrawer.js - Responsive sidebar menu
+LoginDialog.js - Modal สำหรับล็อกอิน
+ProfileDialog.js - แสดงข้อมูลผู้ใช้
+Dashboard.js - หน้าหลักแสดงข้อมูล
+
+🎯 User Experience
+
+Guest Access - ดูข้อมูล Dashboard ได้ทันที
+Smart Login Flow - บังคับ Login เฉพาะเวลาจำเป็น
+Visual Feedback - แสดงสถานะการ Export
+Thai Language - ใช้ภาษาไทยทั้งหมด
+
+📈 ข้อมูลที่แสดง
+
+ยอดขายรวมทุกสาขา
+อัตราการเติบโตเฉลี่ย
+ข้อมูลแต่ละสาขา (เซ็นทรัล, สยาม, อโศก, สีลม)
+สถิติการเติบโตแบบ real-time
+
+######################################
