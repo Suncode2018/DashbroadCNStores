@@ -16,14 +16,15 @@ import {
 } from '@mui/icons-material';
 import config from '../../config';
 
-const Navbar = ({ onMenuClick, user, onProfileClick, onLogout }) => {
+// **[MODIFIED]** Receive the 'onGoHome' prop
+const Navbar = ({ onMenuClick, user, onProfileClick, onLogout, onGoHome }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const handleProfileMenuOpen = (event) => {
     if (user) {
       setAnchorEl(event.currentTarget);
     } else {
-      onProfileClick(); // If no user, clicking profile icon might open login
+      onProfileClick();
     }
   };
 
@@ -44,8 +45,22 @@ const Navbar = ({ onMenuClick, user, onProfileClick, onLogout }) => {
           <MenuIcon />
         </IconButton>
         
-        <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-          {config.appName} - ระบบติดตามยอดขาย
+        {/* **[MODIFIED]** Added onClick and sx props to make it clickable */}
+        <Typography
+          variant="h6"
+          noWrap
+          component="div"
+          onClick={onGoHome} // Set the click event handler
+          sx={{
+            flexGrow: 1,
+            cursor: 'pointer', // Change cursor to a pointer on hover
+            transition: 'opacity 0.2s ease-in-out',
+            '&:hover': {
+              opacity: 0.85, // Add a subtle hover effect
+            },
+          }}
+        >
+          {config.appName} - CN CDC-บางบัวทอง
         </Typography>
 
         <IconButton
@@ -79,3 +94,5 @@ const Navbar = ({ onMenuClick, user, onProfileClick, onLogout }) => {
 };
 
 export default Navbar;
+
+

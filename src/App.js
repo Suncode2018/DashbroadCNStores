@@ -6,8 +6,7 @@ import config from './config';
 import apiService from './api/apiService';
 import { showInfoAlert } from './utils/alertHelpers';
 
-// ตรวจสอบ Path ตรงนี้!
-import Navbar from './components/layout/Navbar'; 
+import Navbar from './components/layout/Navbar';
 import SideDrawer from './components/layout/SideDrawer';
 import LoginDialog from './components/auth/LoginDialog';
 import ProfileDialog from './components/auth/ProfileDialog';
@@ -23,22 +22,15 @@ function App() {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState(null);
-  
+
   useEffect(() => {
-    if (config.debugMode) {
-      testConnection();
-    }
+    if (config.debugMode) { testConnection(); }
     const token = localStorage.getItem(config.tokenKey);
-    if (token) {
-      validateToken(token);
-    }
+    if (token) { validateToken(token); }
   }, []);
 
   const validateToken = async (token) => {
-    if (token === 'mock-jwt-token') {
-       setUser({ name: 'Mock User', email: 'mock@company.com', role: 'Manager (Mock)' });
-       return;
-    }
+    if (token === 'mock-jwt-token') { setUser({ name: 'Mock User', email: 'mock@company.com', role: 'Manager (Mock)' }); return; }
     try {
       const result = await apiService.getProfile();
       if (result.success) { setUser(result.data); } 
@@ -58,9 +50,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      if (user?.token && user.token !== 'mock-jwt-token') {
-        await apiService.logout();
-      }
+      if (user?.token && user.token !== 'mock-jwt-token') { await apiService.logout(); }
     } catch (error) {
       console.error('Logout API error:', error);
     } finally {
@@ -68,6 +58,11 @@ function App() {
       setUser(null);
       showInfoAlert('ออกจากระบบแล้ว', 'ขอบคุณที่ใช้บริการ CN Dashboard');
     }
+  };
+
+  // **[NEW]** Function to handle navigation to the home/dashboard page
+  const handleGoHome = () => {
+    setCurrentPage('dashboard');
   };
 
   const renderCurrentPage = () => {
@@ -79,12 +74,7 @@ function App() {
       case 'branches':
       case 'sales':
       case 'reports':
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom>หน้านี้กำลังพัฒนา</Typography>
-            <Alert severity="info">ฟีเจอร์นี้จะเปิดใช้งานในเร็วๆ นี้</Alert>
-          </Box>
-        );
+        return ( <Box sx={{ p: 3 }}><Typography variant="h4" gutterBottom>หน้านี้กำลังพัฒนา</Typography><Alert severity="info">ฟีเจอร์นี้จะเปิดใช้งานในเร็วๆ นี้</Alert></Box> );
       default:
         return <DashboardPage user={user} onExportRequest={() => setLoginDialogOpen(true)} />;
     }
@@ -94,12 +84,22 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex' }}>
-        <Navbar onMenuClick={() => setDrawerOpen(true)} user={user} onProfileClick={() => setProfileDialogOpen(true)} onLogout={handleLogout} />
+        <Navbar
+          onMenuClick={() => setDrawerOpen(true)}
+          user={user}
+          onProfileClick={() => setProfileDialogOpen(true)}
+          onLogout={handleLogout}
+          // **[MODIFIED]** Pass the new function as a prop
+          onGoHome={handleGoHome}
+        />
+        
         <SideDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} currentPage={currentPage} onPageChange={setCurrentPage} />
+
         <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', minHeight: '100vh', mt: '64px' }}>
           <ConnectionStatus connectionStatus={connectionStatus} />
           {renderCurrentPage()}
         </Box>
+
         <LoginDialog open={loginDialogOpen} onClose={() => setLoginDialogOpen(false)} onLogin={handleLogin} />
         <ProfileDialog open={profileDialogOpen} onClose={() => setProfileDialogOpen(false)} user={user} />
       </Box>
@@ -109,3 +109,4 @@ function App() {
 }
 
 export default App;
+

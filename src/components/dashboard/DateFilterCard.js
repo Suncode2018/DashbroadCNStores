@@ -128,9 +128,9 @@ const DateFilterCard = ({ onFilterChange }) => {
   return (
     <Card sx={{ mb: 4 }}>
       <CardContent>
-        <Typography variant="h6" gutterBottom>
+        {/* <Typography variant="h6" gutterBottom>
           ตัวกรองข้อมูล
-        </Typography>
+        </Typography> */}
         
         {loading ? (
           <Box sx={{ display: 'flex', alignItems: 'center', py: 2 }}>

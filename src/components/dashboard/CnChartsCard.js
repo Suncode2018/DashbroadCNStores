@@ -1,200 +1,165 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-  Box,
-  Typography,
-  ButtonGroup,
-  Button,
-  CircularProgress,
-  Grid,
-  Chip,
-  Alert,
-} from '@mui/material';
-import {
-  ShowChart as LineChartIcon,
-  AreaChart as AreaChartIcon,
-  BarChart as BarChartIcon,
-  PieChart as PieChartIcon,
-} from '@mui/icons-material';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Card, CardContent, Box, Typography, ButtonGroup, Button, CircularProgress, Paper, useTheme, Divider } from '@mui/material';
+import { ShowChart as LineChartIcon, AreaChart as AreaChartIcon, BarChart as BarChartIcon, PieChart as PieChartIcon, Assessment as AssessmentIcon } from '@mui/icons-material';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, ReferenceLine, Label } from 'recharts';
 import apiService from '../../api/apiService';
-import config from '../../config';
-import { showWarningAlert } from '../../utils/alertHelpers';
+import DataMessage from '../common/DataMessage';
 
+const StatItem = ({ label, value, valueColor = 'text.primary', subLabel }) => ( <Paper elevation={2} sx={{ p: 2, textAlign: 'center', flexGrow: 1, flexBasis: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '110px' }}><Typography variant="h4" fontWeight="bold" sx={{ color: valueColor, lineHeight: 1.2 }}>{value}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{label}</Typography>{subLabel && ( <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>{subLabel}</Typography> )}</Paper> );
 
-const CnChartsCard = ({ dateFilter }) => {
-  const [cnData, setCnData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [chartType, setChartType] = useState('line');
-  const [error, setError] = useState(null);
+const CustomLegend = ({ chartType, theme, colors }) => {
+  const { COLOR_MISSING, COLOR_DEGRADED, COLOR_TARGET } = colors;
+  const masterLegendItems = [ { name: 'CN ทั้งหมด (ใบ)', color: theme.palette.primary.main }, { name: 'CN ขาดส่ง (ใบ)', color: COLOR_MISSING }, { name: 'CN เสื่อมคุณภาพ (ใบ)', color: COLOR_DEGRADED }, { name: 'เป้าหมาย (ใบ)', color: COLOR_TARGET }, ];
+  let itemsToRender;
+  if (chartType === 'pie') { itemsToRender = masterLegendItems.slice(1, 3); } 
+  else if (chartType === 'line') { itemsToRender = masterLegendItems; } 
+  else { itemsToRender = masterLegendItems.slice(0, 3); }
+  return ( <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 3, mt: 2 }}> {itemsToRender.map((item) => ( <Box key={item.name} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}> <Box sx={{ width: 14, height: 14, backgroundColor: item.color, borderRadius: '2px' }} /> <Typography variant="body2">{item.name}</Typography> </Box> ))} </Box> );
+};
 
-  const mockCnData = [
-    { DeliveryDate: "2025-09-01", countCnNoALL: 837, countCnNo43ALL: 486, countCnNo42ALL: 351 },
-    { DeliveryDate: "2025-09-02", countCnNoALL: 918, countCnNo43ALL: 516, countCnNo42ALL: 402 },
-    { DeliveryDate: "2025-09-03", countCnNoALL: 895, countCnNo43ALL: 539, countCnNo42ALL: 356 },
-    { DeliveryDate: "2025-09-04", countCnNoALL: 919, countCnNo43ALL: 532, countCnNo42ALL: 387 },
-    { DeliveryDate: "2025-09-05", countCnNoALL: 902, countCnNo43ALL: 522, countCnNo42ALL: 380 },
-  ];
-
-  const fetchCnData = async (startDate, endDate) => {
-    if (!startDate || !endDate) {
-      setCnData(mockCnData);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await apiService.getCnReportByDate(startDate, endDate);
-      
-      if (result.success && result.data?.data) {
-        setCnData(result.data.data);
-      } else {
-        setCnData(mockCnData);
-        if (config.isDevelopment) {
-          showWarningAlert(
-            'ข้อมูล CN ยังไม่พร้อม',
-            'ระบบจะแสดงข้อมูลตัวอย่างในขณะนี้'
-          );
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching CN data:', err);
-      setCnData(mockCnData);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (dateFilter && dateFilter.startDate && dateFilter.endDate) {
-      fetchCnData(dateFilter.startDate, dateFilter.endDate);
-    } else {
-      setCnData(mockCnData);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateFilter]);
-
-  const chartData = cnData.map(item => ({
-    date: new Date(item.DeliveryDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }),
-    fullDate: item.DeliveryDate,
-    total: item.countCnNoALL,
-    cn43: item.countCnNo43ALL,
-    cn42: item.countCnNo42ALL,
-  }));
-
-  const totalCn43 = cnData.reduce((sum, item) => sum + item.countCnNo43ALL, 0);
-  const totalCn42 = cnData.reduce((sum, item) => sum + item.countCnNo42ALL, 0);
-  const totalAll = totalCn43 + totalCn42;
-
-  const avgPerDay = chartData.length > 0 ? Math.round(totalAll / chartData.length) : 0;
-  const maxDay = chartData.length > 0 ? Math.max(...chartData.map(d => d.total)) : 0;
-  const minDay = chartData.length > 0 ? Math.min(...chartData.map(d => d.total)) : 0;
-
-  // Chart rendering functions from the original App.js
-  const renderLineChart = () => (
-    <Box sx={{ width: '100%', height: 400 }}>
-      <Typography variant="h6" color="primary" gutterBottom align="center">
-        แนวโน้ม CN ตามช่วงเวลา
-      </Typography>
-      
-      <Box sx={{ 
-        width: '100%', 
-        height: 320, 
-        position: 'relative',
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        p: 2
-      }}>
-        <Box sx={{ 
-          position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0,
-          opacity: 0.1,
-          backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 35px, #ccc 35px, #ccc 36px), repeating-linear-gradient(90deg, transparent, transparent 35px, #ccc 35px, #ccc 36px)`
-        }} />
-        <Box sx={{ display: 'flex', alignItems: 'end', justifyContent: 'space-around', height: '100%', pt: 2, pb: 4 }}>
-          {chartData.slice(0, 7).map((item, index) => {
-            const heightTotal = (item.total / maxDay) * 250;
+const CustomChartTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const dataPoint = payload[0].payload;
+    const displayOrder = ['CN ทั้งหมด (ใบ)', 'CN ขาดส่ง (ใบ)', 'CN เสื่อมคุณภาพ (ใบ)'];
+    return (
+      <Paper elevation={3} sx={{ p: 1.5, backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>{`วันที่ ${dataPoint.tooltipDate}`}</Typography>
+        <Box>
+          {displayOrder.map(key => {
+            const item = payload.find(p => p.dataKey === key);
+            if (!item) return null;
+            const name = item.name.replace(' (ใบ)', '');
+            const value = item.value.toLocaleString();
+            const color = item.color;
             return (
-              <Box key={index} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                <Box sx={{ width: 8, height: 8, bgcolor: 'primary.main', borderRadius: '50%', position: 'absolute', bottom: heightTotal + 30, boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }} />
-                <Box sx={{ width: 12, height: (item.cn43 / maxDay) * 200, bgcolor: 'secondary.main', borderRadius: '2px 2px 0 0', mb: 0.5, opacity: 0.8 }} />
-                <Box sx={{ width: 12, height: (item.cn42 / maxDay) * 200, bgcolor: 'success.main', borderRadius: '2px 2px 0 0', mb: 1, opacity: 0.8 }} />
-                <Typography variant="caption" sx={{ fontSize: '0.7rem', textAlign: 'center', color: 'text.secondary', transform: 'rotate(-45deg)', whiteSpace: 'nowrap' }}>{item.date}</Typography>
-                <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'primary.main', fontWeight: 'bold', mt: 0.5 }}>{item.total}</Typography>
-              </Box>
+              <Typography key={key} variant="body2" sx={{ color: color, display: 'flex', justifyContent: 'space-between' }}>
+                <span>{name}:</span>
+                <span style={{ fontWeight: 'bold', marginLeft: '16px' }}>{value} (ใบ)</span>
+              </Typography>
             );
           })}
         </Box>
-      </Box>
-    </Box>
-  );
+      </Paper>
+    );
+  }
+  return null;
+};
 
-  const renderAreaChart = () => ( <Box sx={{ p: 4, border: '1px dashed grey', textAlign: 'center' }}>Area Chart Simulation</Box> );
-  const renderBarChart = () => ( <Box sx={{ p: 4, border: '1px dashed grey', textAlign: 'center' }}>Bar Chart Simulation</Box> );
-  const renderPieChart = () => ( <Box sx={{ p: 4, border: '1px dashed grey', textAlign: 'center' }}>Pie Chart Simulation</Box> );
+const CnChartsCard = ({ dateFilter }) => {
+  const [cnData, setCnData] = useState([]);
+  const [chartType, setChartType] = useState('line');
+  const [status, setStatus] = useState('initial');
+  const [errorMessage, setErrorMessage] = useState('');
+  const theme = useTheme();
 
-  const renderChart = () => {
-    switch (chartType) {
-      case 'line': return renderLineChart();
-      case 'area': return renderAreaChart();
-      case 'bar': return renderBarChart();
-      case 'pie': return renderPieChart();
-      default: return renderLineChart();
+  const TARGET_LINE_VALUE = parseInt(process.env.REACT_APP_CN_TARGET, 10) || 650;
+  const COLOR_MISSING = '#f44336';
+  const COLOR_DEGRADED = '#ff9800';
+  // **[MODIFIED]** Changed the target color to a distinct purple
+  const COLOR_TARGET = '#6a1b9a'; // A deep, standout purple
+  
+  const fetchCnData = useCallback(async (startDate, endDate) => {
+    if (!startDate || !endDate) { setStatus('initial'); setCnData([]); return; }
+    setStatus('loading');
+    try {
+      const result = await apiService.getCnReportByDate(startDate, endDate);
+      if (result.success) {
+        if (Array.isArray(result.data?.data) && result.data.data.length > 0) {
+          setCnData(result.data.data); setStatus('success');
+        } else {
+          setCnData([]); setStatus('empty');
+        }
+      } else { throw new Error(result.error); }
+    } catch (err) {
+      setCnData([]); setStatus('error'); setErrorMessage(err.message || 'ไม่สามารถดึงข้อมูลได้');
     }
+  }, []);
+
+  useEffect(() => {
+    fetchCnData(dateFilter?.startDate, dateFilter?.endDate);
+  }, [dateFilter, fetchCnData]);
+
+  const handleRetry = () => {
+    fetchCnData(dateFilter?.startDate, dateFilter?.endDate);
+  };
+  
+  const formattedData = cnData.map(item => ({ date: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short' }), tooltipDate: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }), 'CN ทั้งหมด (ใบ)': item.countCnNoALL, 'CN ขาดส่ง (ใบ)': item.countCnNo43ALL, 'CN เสื่อมคุณภาพ (ใบ)': item.countCnNo42ALL, }));
+  const totalMissing = cnData.reduce((sum, item) => sum + item.countCnNo43ALL, 0);
+  const totalDegraded = cnData.reduce((sum, item) => sum + item.countCnNo42ALL, 0);
+  const totalAll = totalMissing + totalDegraded;
+  
+  const summaryStats = useMemo(() => {
+    if (!cnData || cnData.length === 0) {
+      return { average: 0, maxDay: { value: 0, date: '-' }, minDay: { value: 0, date: '-' } };
+    }
+    const formatDate = (dateString) => new Date(dateString).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const maxDayObject = cnData.reduce((max, day) => day.countCnNoALL > max.countCnNoALL ? day : max, cnData[0]);
+    const minDayObject = cnData.reduce((min, day) => day.countCnNoALL < min.countCnNoALL ? day : min, cnData[0]);
+    return { average: Math.round(totalAll / cnData.length), maxDay: { value: maxDayObject.countCnNoALL, date: formatDate(maxDayObject.DeliveryDate) }, minDay: { value: minDayObject.countCnNoALL, date: formatDate(minDayObject.DeliveryDate) } };
+  }, [cnData, totalAll]);
+
+  const pieData = [ { name: 'CN ขาดส่ง (ใบ)', value: totalMissing }, { name: 'CN เสื่อมคุณภาพ (ใบ)', value: totalDegraded }, ];
+  const PIE_COLORS = [COLOR_MISSING, COLOR_DEGRADED];
+  
+  const yAxisFormatter = (value) => value.toLocaleString();
+  const CustomPieTooltip = ({ active, payload }) => { if (active && payload && payload.length) { const name = payload[0].name.replace(' (ใบ)', ''); const value = payload[0].value; const percent = totalAll > 0 ? ((value / totalAll) * 100).toFixed(2) : 0; return ( <Paper elevation={3} sx={{ p: 1.5, backgroundColor: 'rgba(255, 255, 255, 0.9)' }}><Typography variant="body2" fontWeight="bold">{`${name}: ${value.toLocaleString()} (ใบ)`}</Typography><Typography variant="caption" color="text.secondary">{`คิดเป็น ${percent}%`}</Typography></Paper> ); } return null; };
+  const generateDateRangeString = () => { if (dateFilter && dateFilter.startDate && dateFilter.endDate) { const options = { day: '2-digit', month: '2-digit', year: 'numeric' }; const startDate = new Date(dateFilter.startDate).toLocaleDateString('th-TH', options); const endDate = new Date(dateFilter.endDate).toLocaleDateString('th-TH', options); return `วันที่ ${startDate} ถึง ${endDate}`; } return 'กรุณาเลือกช่วงวันที่'; };
+  
+  const renderContent = () => {
+    if (status === 'loading') { return <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}><CircularProgress sx={{ mr: 2 }} /><Typography>กำลังโหลดข้อมูลกราฟ...</Typography></Box>; }
+    if (status === 'error') { return <DataMessage status="error" message={errorMessage} onRetry={handleRetry} />; }
+    if (status === 'empty' || status === 'initial') { return <DataMessage status="info" message="กรุณาเลือกช่วงวันที่เพื่อแสดงข้อมูล" />; }
+    if (status === 'success') {
+      const ChartWrapper = ({ children }) => ( <Box sx={{ height: 400, width: '100%', mt: 2 }}><ResponsiveContainer>{children}</ResponsiveContainer></Box> );
+      switch (chartType) {
+        case 'line': return ( <ChartWrapper><LineChart data={formattedData} margin={{ top: 15, right: 20, left: -10, bottom: 25 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" /><YAxis tickFormatter={yAxisFormatter} /><Tooltip content={<CustomChartTooltip />} /><Legend content={<CustomLegend chartType="line" theme={theme} colors={{COLOR_MISSING, COLOR_DEGRADED, COLOR_TARGET}} />} />
+            {/* **[MODIFIED]** Added strokeWidth to make the line thicker */}
+            <ReferenceLine y={TARGET_LINE_VALUE} stroke={COLOR_TARGET} strokeWidth={2} strokeDasharray="3 3">
+              <Label 
+                value={`เป้าหมาย: ${TARGET_LINE_VALUE}`} 
+                position="insideTopRight" 
+                fill={COLOR_TARGET} 
+                fontSize={12}
+                fontWeight="bold"
+              />
+            </ReferenceLine>
+            <Line type="monotone" dataKey="CN ทั้งหมด (ใบ)" stroke={theme.palette.primary.main} strokeWidth={2} activeDot={{ r: 8 }} /><Line type="monotone" dataKey="CN ขาดส่ง (ใบ)" stroke={COLOR_MISSING} /><Line type="monotone" dataKey="CN เสื่อมคุณภาพ (ใบ)" stroke={COLOR_DEGRADED} /></LineChart></ChartWrapper> );
+        case 'area': return ( <ChartWrapper><AreaChart data={formattedData} margin={{ top: 5, right: 20, left: -10, bottom: 25 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" /><YAxis tickFormatter={yAxisFormatter} /><Tooltip content={<CustomChartTooltip />} /><Legend content={<CustomLegend chartType="area" theme={theme} colors={{COLOR_MISSING, COLOR_DEGRADED, COLOR_TARGET}} />} /><Area type="monotone" dataKey="CN ทั้งหมด (ใบ)" stroke={theme.palette.primary.dark} fill={theme.palette.primary.light} fillOpacity={0.3} /><Area type="monotone" dataKey="CN ขาดส่ง (ใบ)" stackId="1" stroke={COLOR_MISSING} fill={COLOR_MISSING} fillOpacity={0.6} /><Area type="monotone" dataKey="CN เสื่อมคุณภาพ (ใบ)" stackId="1" stroke={COLOR_DEGRADED} fill={COLOR_DEGRADED} fillOpacity={0.6} /></AreaChart></ChartWrapper> );
+        case 'bar': return ( <ChartWrapper><BarChart data={formattedData} margin={{ top: 5, right: 20, left: -10, bottom: 25 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" /><YAxis tickFormatter={yAxisFormatter} /><Tooltip content={<CustomChartTooltip />} /><Legend content={<CustomLegend chartType="bar" theme={theme} colors={{COLOR_MISSING, COLOR_DEGRADED, COLOR_TARGET}} />} /><Bar dataKey="CN ทั้งหมด (ใบ)" fill={theme.palette.primary.main} /><Bar dataKey="CN ขาดส่ง (ใบ)" fill={COLOR_MISSING} /><Bar dataKey="CN เสื่อมคุณภาพ (ใบ)" fill={COLOR_DEGRADED} /></BarChart></ChartWrapper> );
+        case 'pie': return ( <ChartWrapper><PieChart margin={{ top: 5, right: 20, left: -10, bottom: 25 }}><Pie data={pieData} cx="50%" cy="50%" labelLine={false} outerRadius={120} fill="#8884d8" dataKey="value" label={({ name, percent }) => `${name.replace(' (ใบ)', '')} ${(percent * 100).toFixed(0)}%`} >{pieData.map((entry, index) => ( <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} /> ))}</Pie><Tooltip content={<CustomPieTooltip />} /><Legend content={<CustomLegend chartType="pie" theme={theme} colors={{COLOR_MISSING, COLOR_DEGRADED, COLOR_TARGET}} />} /></PieChart></ChartWrapper> );
+        default: return null;
+      }
+    }
+    return null;
   };
 
   return (
     <Card sx={{ mb: 4, boxShadow: 3 }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h5" fontWeight="bold" color="primary">
-            CN ทั้งหมด
-          </Typography>
-          
-          <ButtonGroup variant="outlined" size="small" sx={{ borderRadius: 2 }}>
-            <Button variant={chartType === 'line' ? 'contained' : 'outlined'} startIcon={<LineChartIcon />} onClick={() => setChartType('line')} sx={{ borderRadius: '8px 0 0 8px' }}>เส้น</Button>
-            <Button variant={chartType === 'area' ? 'contained' : 'outlined'} startIcon={<AreaChartIcon />} onClick={() => setChartType('area')}>พื้นที่</Button>
-            <Button variant={chartType === 'bar' ? 'contained' : 'outlined'} startIcon={<BarChartIcon />} onClick={() => setChartType('bar')}>แท่ง</Button>
-            <Button variant={chartType === 'pie' ? 'contained' : 'outlined'} startIcon={<PieChartIcon />} onClick={() => setChartType('pie')} sx={{ borderRadius: '0 8px 8px 0' }}>วงกลม</Button>
-          </ButtonGroup>
+      <CardContent sx={{ pb: '32px !important' }}>
+        <Box sx={{ textAlign: 'center', mb: 2 }}><Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}><AssessmentIcon color="primary" sx={{ fontSize: '2rem' }}/><Typography component="div" variant="h5" fontWeight="bold" color="primary">ภาพรวมข้อมูล CN CDC-บางบัวทอง</Typography></Box><Typography variant="subtitle1" color="text.secondary" sx={{ mt: 0.5 }}>{generateDateRangeString()}</Typography></Box>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <ButtonGroup variant="outlined" size="small" disabled={status !== 'success'}>
+                <Button variant={chartType === 'line' ? 'contained' : 'outlined'} startIcon={<LineChartIcon />} onClick={() => setChartType('line')}>เส้น-(ใบ)</Button>
+                <Button variant={chartType === 'area' ? 'contained' : 'outlined'} startIcon={<AreaChartIcon />} onClick={() => setChartType('area')}>พื้นที่-(ใบ)</Button>
+                <Button variant={chartType === 'bar' ? 'contained' : 'outlined'} startIcon={<BarChartIcon />} onClick={() => setChartType('bar')}>แท่ง-(ใบ)</Button>
+                <Button variant={chartType === 'pie' ? 'contained' : 'outlined'} startIcon={<PieChartIcon />} onClick={() => setChartType('pie')}>วงกลม-(ใบ)</Button>
+            </ButtonGroup>
         </Box>
-
-        {loading ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 400 }}>
-            <CircularProgress sx={{ mr: 2 }} />
-            <Typography>กำลังโหลดข้อมูล CN...</Typography>
-          </Box>
-        ) : (
-          <>
-            {renderChart()}
-            
-            <Box sx={{ mt: 3, p: 3, bgcolor: 'grey.50', borderRadius: 2, border: '1px solid', borderColor: 'grey.200' }}>
-              <Typography variant="h6" gutterBottom color="primary" fontWeight="bold">สรุปข้อมูล CN (ช่วงเวลาที่เลือก)</Typography>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={3}><Box sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.light', borderRadius: 2 }}><Typography variant="body2" color="primary.contrastText">CN ทั้งหมด</Typography><Typography variant="h5" color="primary.contrastText" fontWeight="bold">{totalAll.toLocaleString()}</Typography></Box></Grid>
-                <Grid item xs={12} sm={3}><Box sx={{ textAlign: 'center', p: 2, bgcolor: 'secondary.light', borderRadius: 2 }}><Typography variant="body2" color="secondary.contrastText">CN43</Typography><Typography variant="h5" color="secondary.contrastText" fontWeight="bold">{totalCn43.toLocaleString()}</Typography><Typography variant="caption" color="secondary.contrastText">{((totalCn43 / totalAll) * 100 || 0).toFixed(1)}%</Typography></Box></Grid>
-                <Grid item xs={12} sm={3}><Box sx={{ textAlign: 'center', p: 2, bgcolor: 'success.light', borderRadius: 2 }}><Typography variant="body2" color="success.contrastText">CN42</Typography><Typography variant="h5" color="success.contrastText" fontWeight="bold">{totalCn42.toLocaleString()}</Typography><Typography variant="caption" color="success.contrastText">{((totalCn42 / totalAll) * 100 || 0).toFixed(1)}%</Typography></Box></Grid>
-                <Grid item xs={12} sm={3}><Box sx={{ textAlign: 'center', p: 2, bgcolor: 'info.light', borderRadius: 2 }}><Typography variant="body2" color="info.contrastText">เฉลี่ย/วัน</Typography><Typography variant="h5" color="info.contrastText" fontWeight="bold">{avgPerDay.toLocaleString()}</Typography><Typography variant="caption" color="info.contrastText">{chartData.length} วัน</Typography></Box></Grid>
-              </Grid>
-              
-              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 2 }}>
-                <Chip label={`สูงสุด: ${maxDay.toLocaleString()} CN`} color="error" variant="outlined" sx={{ fontWeight: 'bold' }}/>
-                <Chip label={`ต่ำสุด: ${minDay.toLocaleString()} CN`} color="warning" variant="outlined" sx={{ fontWeight: 'bold' }}/>
-                <Chip label={`ช่วงข้อมูล: ${chartData.length} วัน`} color="info" variant="outlined" sx={{ fontWeight: 'bold' }}/>
-              </Box>
+        <Divider sx={{ mb: 1 }}/>
+        {renderContent()}
+        {status === 'success' && (
+          <Box sx={{ mt: 3 }}>
+            <Typography variant="h6" gutterBottom fontWeight="bold">สรุปข้อมูล (ตามช่วงวันที่เลือก)</Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center' }}>
+              <StatItem label="CN ทั้งหมด (ใบ)" value={totalAll.toLocaleString()} valueColor={theme.palette.primary.main} />
+              <StatItem label="CN ขาดส่ง (ใบ)" value={totalMissing.toLocaleString()} valueColor={COLOR_MISSING} />
+              <StatItem label="CN เสื่อมคุณภาพ (ใบ)" value={totalDegraded.toLocaleString()} valueColor={COLOR_DEGRADED} />
+              <StatItem label="CN เฉลี่ยต่อวัน (ใบ)" value={summaryStats.average.toLocaleString()} valueColor={theme.palette.info.dark} />
+              <StatItem label="CN สูงสุด (ใบ)" value={summaryStats.maxDay.value.toLocaleString()} subLabel={`วันที่ ${summaryStats.maxDay.date}`} valueColor={theme.palette.warning.dark} />
+              <StatItem label="CN ต่ำสุด (ใบ)" value={summaryStats.minDay.value.toLocaleString()} subLabel={`วันที่ ${summaryStats.minDay.date}`} valueColor={theme.palette.success.dark} />
+              <StatItem label="จำนวนวัน" value={cnData.length.toLocaleString()} valueColor="text.secondary" />
             </Box>
-
-            {dateFilter && (
-              <Alert severity="info" sx={{ mt: 2, borderRadius: 2, '& .MuiAlert-icon': { fontSize: '1.5rem' } }}>
-                <Typography variant="body2" fontWeight="medium">ข้อมูล CN ตั้งแต่ {new Date(dateFilter.startDate).toLocaleDateString('th-TH')} ถึง {new Date(dateFilter.endDate).toLocaleDateString('th-TH')}{config.isDevelopment && ' (ข้อมูลตัวอย่างสำหรับการทดสอบ)'}</Typography>
-              </Alert>
-            )}
-          </>
+          </Box>
         )}
       </CardContent>
     </Card>

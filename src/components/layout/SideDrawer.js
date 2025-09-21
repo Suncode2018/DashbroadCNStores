@@ -15,7 +15,8 @@ import {
   TrendingUp as TrendingUpIcon,
   Assessment as AssessmentIcon,
 } from '@mui/icons-material';
-import config from '../../config';
+// **[MODIFIED]** Removed unused 'config' import
+// import config from '../../config';
 
 const SideDrawer = ({ open, onClose, currentPage, onPageChange }) => {
   const menuItems = [
@@ -24,14 +25,6 @@ const SideDrawer = ({ open, onClose, currentPage, onPageChange }) => {
     { text: 'ยอดขาย', icon: <TrendingUpIcon />, page: 'sales' },
     { text: 'รายงาน', icon: <AssessmentIcon />, page: 'reports' },
   ];
-
-  if (config.debugMode) {
-    menuItems.push({
-      text: 'API Testing',
-      icon: <AssessmentIcon />,
-      page: 'api-test'
-    });
-  }
 
   return (
     <Drawer
