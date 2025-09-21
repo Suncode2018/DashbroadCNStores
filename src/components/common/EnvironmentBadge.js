@@ -1,22 +1,16 @@
 import React from 'react';
 import { Chip } from '@mui/material';
-import config from '../../config/config';
+import config from '../../config';
 
 const EnvironmentBadge = () => {
-  if (!config.debugMode || config.isProduction) {
-    return null;
-  }
+  if (!config.debugMode) return null;
 
   const getColor = () => {
     switch (config.environment) {
-      case 'development':
-        return 'primary';
-      case 'staging':
-        return 'warning';
-      case 'production':
-        return 'error';
-      default:
-        return 'default';
+      case 'development': return 'primary';
+      case 'staging': return 'warning';
+      case 'production': return 'error';
+      default: return 'default';
     }
   };
 
@@ -37,3 +31,5 @@ const EnvironmentBadge = () => {
 };
 
 export default EnvironmentBadge;
+
+
