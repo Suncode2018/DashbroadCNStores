@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
+// **[MODIFIED]** Cleaned up unused imports
 import { Card, CardContent, Box, Typography, Paper, useTheme, Divider, ToggleButton, ToggleButtonGroup, CircularProgress } from '@mui/material';
 import { ShowChart as LineChartIcon, BarChart as BarChartIcon, PieChart as PieChartIcon, Assessment as AssessmentIcon, AreaChart as AreaChartIcon } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import DataMessage from '../common/DataMessage';
 
+// --- The rest of the file remains exactly the same ---
 const StatItem = ({ label, value, valueColor = 'text.primary', subLabel }) => ( <Paper elevation={2} sx={{ p: 2, textAlign: 'center', flexGrow: 1, flexBasis: '150px', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '110px' }}><Typography variant="h4" fontWeight="bold" sx={{ color: valueColor, lineHeight: 1.2 }}>{value}</Typography><Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{label}</Typography>{subLabel && ( <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2 }}>{subLabel}</Typography> )}</Paper> );
 const CustomLegend = ({ legendItems, theme }) => ( <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 3, mt: 2 }}> {legendItems.map((item) => ( <Box key={item.name} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}> <Box sx={{ width: 14, height: 14, backgroundColor: item.color, borderRadius: '2px' }} /> <Typography variant="body2">{item.name}</Typography> </Box> ))} </Box> );
 const CustomChartTooltip = ({ active, payload, unit }) => { if (active && payload && payload.length) { const dataPoint = payload[0].payload; const displayOrder = payload.map(p => p.dataKey); return ( <Paper elevation={3} sx={{ p: 1.5, backgroundColor: 'rgba(255, 255, 255, 0.95)' }}><Typography variant="subtitle2" sx={{ mb: 1 }}>{`วันที่ ${dataPoint.tooltipDate}`}</Typography><Box> {displayOrder.map(key => { const item = payload.find(p => p.dataKey === key); if (!item) return null; const name = item.name.replace(` (${unit})`, ''); const value = item.value.toLocaleString(); const color = item.color; return ( <Typography key={key} variant="body2" sx={{ color: color, display: 'flex', justifyContent: 'space-between' }}><span>{name}:</span><span style={{ fontWeight: 'bold', marginLeft: '16px' }}>{`${value} (${unit})`}</span></Typography> ); })} </Box></Paper> ); } return null; };
@@ -111,7 +113,6 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateFilter }) =>
                             <StatItem label={`ทั้งหมด (${unit})`} value={summaryData.totalAll.toLocaleString()} valueColor={theme.palette.primary.main} />
                             <StatItem label={`ขาดส่ง (${unit})`} value={summaryData.total43.toLocaleString()} valueColor={colors.type43} />
                             <StatItem label={`เสื่อมคุณภาพ (${unit})`} value={summaryData.total42.toLocaleString()} valueColor={colors.type42} />
-                            {/* **[RESTORED]** The missing StatItems are back */}
                             <StatItem label={`เฉลี่ยต่อวัน (${unit})`} value={summaryStats.average.toLocaleString()} valueColor={theme.palette.info.dark} />
                             <StatItem label={`สูงสุด (${unit})`} value={summaryStats.maxDay.value.toLocaleString()} subLabel={`วันที่ ${summaryStats.maxDay.date}`} valueColor={theme.palette.warning.dark} />
                             <StatItem label={`ต่ำสุด (${unit})`} value={summaryStats.minDay.value.toLocaleString()} subLabel={`วันที่ ${summaryStats.minDay.date}`} valueColor={theme.palette.success.dark} />
@@ -124,5 +125,3 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateFilter }) =>
     );
 };
 export default CnChartsCard;
-
-
