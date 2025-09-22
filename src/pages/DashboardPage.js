@@ -45,15 +45,8 @@ const DashboardPage = () => {
     return 'กรุณาเลือกช่วงวันที่';
   }, [dateFilter]);
 
-  // **[NEW]** Generic function to create a config object to avoid repetition
   const createChartConfig = (unit, totalKey, key43, key42) => {
-    const chartData = apiData.map(item => ({
-      date: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short' }),
-      tooltipDate: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }),
-      [`ทั้งหมด (${unit})`]: item[totalKey],
-      [`ขาดส่ง (${unit})`]: item[key43],
-      [`เสื่อมคุณภาพ (${unit})`]: item[key42],
-    }));
+    const chartData = apiData.map(item => ({ date: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short' }), tooltipDate: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }), [`ทั้งหมด (${unit})`]: item[totalKey], [`ขาดส่ง (${unit})`]: item[key43], [`เสื่อมคุณภาพ (${unit})`]: item[key42], }));
     const total43 = apiData.reduce((sum, item) => sum + item[key43], 0);
     const total42 = apiData.reduce((sum, item) => sum + item[key42], 0);
     const totalAll = total43 + total42;
@@ -85,6 +78,9 @@ const DashboardPage = () => {
   const byCountConfig = useMemo(() => createChartConfig('ใบ', 'countCnNoALL', 'countCnNo43ALL', 'countCnNo42ALL'), [apiData]);
   const byPackConfig = useMemo(() => createChartConfig('แพ็ค', 'sumQtyPackALL', 'sumQtyPack43ALL', 'sumQtyPack42ALL'), [apiData]);
   const byPieceConfig = useMemo(() => createChartConfig('ชิ้น', 'sumQtyPCSALL', 'sumQtyPCS43ALL', 'sumQtyPCS42ALL'), [apiData]);
+  
+  // **[NEW]** Added config for the "By บาท" view
+  const byBahtConfig = useMemo(() => createChartConfig('บาท', 'sumBahtCNALL', 'sumBahtCN43', 'sumBahtCN42'), [apiData]);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -102,10 +98,12 @@ const DashboardPage = () => {
           errorMessage={errorMessage}
           onRetry={handleRetry}
           dateRangeString={dateRangeString}
+          apiDataLength={apiData.length}
           byCountConfig={byCountConfig}
           byPackConfig={byPackConfig}
           byPieceConfig={byPieceConfig}
-          apiDataLength={apiData.length} // Pass only the length for the summary
+          // **[NEW]** Pass the new config as a prop
+          byBahtConfig={byBahtConfig}
         />
       )}
     </Box>
@@ -113,5 +111,4 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-
 

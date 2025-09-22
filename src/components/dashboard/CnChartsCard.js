@@ -8,15 +8,17 @@ const StatItem = ({ label, value, valueColor = 'text.primary', subLabel }) => ( 
 const CustomLegend = ({ legendItems, theme }) => ( <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: 3, mt: 2 }}> {legendItems.map((item) => ( <Box key={item.name} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}> <Box sx={{ width: 14, height: 14, backgroundColor: item.color, borderRadius: '2px' }} /> <Typography variant="body2">{item.name}</Typography> </Box> ))} </Box> );
 const CustomChartTooltip = ({ active, payload, unit }) => { if (active && payload && payload.length) { const dataPoint = payload[0].payload; const displayOrder = payload.map(p => p.dataKey); return ( <Paper elevation={3} sx={{ p: 1.5, backgroundColor: 'rgba(255, 255, 255, 0.95)' }}><Typography variant="subtitle2" sx={{ mb: 1 }}>{`วันที่ ${dataPoint.tooltipDate}`}</Typography><Box> {displayOrder.map(key => { const item = payload.find(p => p.dataKey === key); if (!item) return null; const name = item.name.replace(` (${unit})`, ''); const value = item.value.toLocaleString(); const color = item.color; return ( <Typography key={key} variant="body2" sx={{ color: color, display: 'flex', justifyContent: 'space-between' }}><span>{name}:</span><span style={{ fontWeight: 'bold', marginLeft: '16px' }}>{`${value} (${unit})`}</span></Typography> ); })} </Box></Paper> ); } return null; };
 
-const CnChartsCard = ({ status, errorMessage, onRetry, dateRangeString, byCountConfig, byPackConfig, byPieceConfig, apiDataLength }) => {
+// **[MODIFIED]** Accept the new byBahtConfig prop
+const CnChartsCard = ({ status, errorMessage, onRetry, dateRangeString, apiDataLength, byCountConfig, byPackConfig, byPieceConfig, byBahtConfig }) => {
     const [chartType, setChartType] = useState('line-count');
     const theme = useTheme();
 
     const currentConfig = useMemo(() => {
         if (chartType.endsWith('-pack')) return byPackConfig;
         if (chartType.endsWith('-piece')) return byPieceConfig;
+        if (chartType.endsWith('-baht')) return byBahtConfig;
         return byCountConfig;
-    }, [chartType, byCountConfig, byPackConfig, byPieceConfig]);
+    }, [chartType, byCountConfig, byPackConfig, byPieceConfig, byBahtConfig]);
     
     const { chartData, summaryData, summaryStats, config } = currentConfig;
     const { unit, dataKeys, colors } = config;
@@ -75,6 +77,13 @@ const CnChartsCard = ({ status, errorMessage, onRetry, dateRangeString, byCountC
                         <ToggleButton value="bar-piece" aria-label="Bar Chart by Piece">แท่ง-(ชิ้น)</ToggleButton>
                         <ToggleButton value="pie-piece" aria-label="Pie Chart by Piece">วงกลม-(ชิ้น)</ToggleButton>
                     </ToggleButtonGroup>
+                    {/* **[NEW]** Added the button group for "By บาท" */}
+                    <ToggleButtonGroup value={chartType} exclusive onChange={handleChartTypeChange} size="small" disabled={status !== 'success'}>
+                        <ToggleButton value="line-baht" aria-label="Line Chart by Baht">เส้น-(บาท)</ToggleButton>
+                        <ToggleButton value="area-baht" aria-label="Area Chart by Baht">พื้นที่-(บาท)</ToggleButton>
+                        <ToggleButton value="bar-baht" aria-label="Bar Chart by Baht">แท่ง-(บาท)</ToggleButton>
+                        <ToggleButton value="pie-baht" aria-label="Pie Chart by Baht">วงกลม-(บาท)</ToggleButton>
+                    </ToggleButtonGroup>
                 </Box>
                 <Divider sx={{ mb: 1 }}/>
                 {renderContent()}
@@ -98,4 +107,5 @@ const CnChartsCard = ({ status, errorMessage, onRetry, dateRangeString, byCountC
     );
 };
 export default CnChartsCard;
+
 
