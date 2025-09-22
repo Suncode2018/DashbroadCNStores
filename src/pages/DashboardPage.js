@@ -11,19 +11,29 @@ const DashboardPage = () => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const fetchCnData = useCallback(async (startDate, endDate) => {
-    if (!startDate || !endDate) { setStatus('initial'); setApiData([]); return; }
+    if (!startDate || !endDate) {
+      setStatus('initial');
+      setApiData([]);
+      return;
+    }
     setStatus('loading');
     try {
       const result = await apiService.getCnReportByDate(startDate, endDate);
       if (result.success) {
         if (Array.isArray(result.data?.data) && result.data.data.length > 0) {
-          setApiData(result.data.data); setStatus('success');
+          setApiData(result.data.data);
+          setStatus('success');
         } else {
-          setApiData([]); setStatus('empty');
+          setApiData([]);
+          setStatus('empty');
         }
-      } else { throw new Error(result.error); }
+      } else {
+        throw new Error(result.error);
+      }
     } catch (err) {
-      setApiData([]); setStatus('error'); setErrorMessage(err.message || 'ไม่สามารถดึงข้อมูลได้');
+      setApiData([]);
+      setStatus('error');
+      setErrorMessage(err.message || 'ไม่สามารถดึงข้อมูลได้');
     }
   }, []);
 
@@ -46,7 +56,14 @@ const DashboardPage = () => {
   }, [dateFilter]);
 
   const createChartConfig = (unit, totalKey, key43, key42) => {
-    const chartData = apiData.map(item => ({ date: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short' }), tooltipDate: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }), [`ทั้งหมด (${unit})`]: item[totalKey], [`ขาดส่ง (${unit})`]: item[key43], [`เสื่อมคุณภาพ (${unit})`]: item[key42], }));
+    const chartData = apiData.map(item => ({
+      date: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short' }),
+      tooltipDate: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }),
+      [`ทั้งหมด (${unit})`]: item[totalKey],
+      [`ขาดส่ง (${unit})`]: item[key43],
+      [`เสื่อมคุณภาพ (${unit})`]: item[key42],
+      msgSuggestion: item.msgSuggestion || '',
+    }));
     const total43 = apiData.reduce((sum, item) => sum + item[key43], 0);
     const total42 = apiData.reduce((sum, item) => sum + item[key42], 0);
     const totalAll = total43 + total42;
@@ -78,8 +95,6 @@ const DashboardPage = () => {
   const byCountConfig = useMemo(() => createChartConfig('ใบ', 'countCnNoALL', 'countCnNo43ALL', 'countCnNo42ALL'), [apiData]);
   const byPackConfig = useMemo(() => createChartConfig('แพ็ค', 'sumQtyPackALL', 'sumQtyPack43ALL', 'sumQtyPack42ALL'), [apiData]);
   const byPieceConfig = useMemo(() => createChartConfig('ชิ้น', 'sumQtyPCSALL', 'sumQtyPCS43ALL', 'sumQtyPCS42ALL'), [apiData]);
-  
-  // **[NEW]** Added config for the "By บาท" view
   const byBahtConfig = useMemo(() => createChartConfig('บาท', 'sumBahtCNALL', 'sumBahtCN43', 'sumBahtCN42'), [apiData]);
 
   return (
@@ -98,11 +113,10 @@ const DashboardPage = () => {
           errorMessage={errorMessage}
           onRetry={handleRetry}
           dateRangeString={dateRangeString}
-          apiDataLength={apiData.length}
+          apiData={apiData}
           byCountConfig={byCountConfig}
           byPackConfig={byPackConfig}
           byPieceConfig={byPieceConfig}
-          // **[NEW]** Pass the new config as a prop
           byBahtConfig={byBahtConfig}
         />
       )}
