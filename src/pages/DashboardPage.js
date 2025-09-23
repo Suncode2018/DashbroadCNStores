@@ -45,21 +45,20 @@ const DashboardPage = () => {
     fetchCnData(dateFilter?.startDate, dateFilter?.endDate);
   }, [dateFilter, fetchCnData]);
 
-  // **[MODIFIED]** แก้ไขการสร้างข้อความในตัวแปรนี้ให้เป็นรูปแบบที่ต้องการ
   const dateRangeString = useMemo(() => {
     const baseTitle = 'ภาพรวมข้อมูล CN CDC-บางบัวทอง';
     if (dateFilter && dateFilter.startDate && dateFilter.endDate) {
       const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
       const startDate = new Date(dateFilter.startDate).toLocaleDateString('th-TH', options);
       const endDate = new Date(dateFilter.endDate).toLocaleDateString('th-TH', options);
-      // สร้างข้อความเต็มรูปแบบส่งไปให้ CnChartsCard
       return `${baseTitle} วันที่: ${startDate} ถึง ${endDate}`;
     }
-    // ถ้ายังไม่เลือกวัน ให้แสดงแค่หัวข้อหลัก
     return baseTitle;
   }, [dateFilter]);
 
-  const createChartConfig = (unit, totalKey, key43, key42) => {
+  // **[MODIFIED]** 1. ห่อหุ้ม createChartConfig ด้วย useCallback
+  // และระบุว่าฟังก์ชันนี้จะเปลี่ยนเมื่อ apiData เปลี่ยนเท่านั้น
+  const createChartConfig = useCallback((unit, totalKey, key43, key42) => {
     const chartData = apiData.map(item => ({
       date: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short' }),
       tooltipDate: new Date(item.DeliveryDate).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }),
@@ -94,12 +93,13 @@ const DashboardPage = () => {
         colors: { type43: '#f44336', type42: '#ff9800' },
       }
     };
-  };
+  }, [apiData]); // ระบุ dependency คือ apiData
   
-  const byCountConfig = useMemo(() => createChartConfig('ใบ', 'countCnNoALL', 'countCnNo43ALL', 'countCnNo42ALL'), [apiData]);
-  const byPackConfig = useMemo(() => createChartConfig('แพ็ค', 'sumQtyPackALL', 'sumQtyPack43ALL', 'sumQtyPack42ALL'), [apiData]);
-  const byPieceConfig = useMemo(() => createChartConfig('ชิ้น', 'sumQtyPCSALL', 'sumQtyPCS43ALL', 'sumQtyPCS42ALL'), [apiData]);
-  const byBahtConfig = useMemo(() => createChartConfig('บาท', 'sumBahtCNALL', 'sumBahtCN43', 'sumBahtCN42'), [apiData]);
+  // **[MODIFIED]** 2. เพิ่ม createChartConfig เข้าไปใน dependency array ของ useMemo
+  const byCountConfig = useMemo(() => createChartConfig('ใบ', 'countCnNoALL', 'countCnNo43ALL', 'countCnNo42ALL'), [createChartConfig]);
+  const byPackConfig = useMemo(() => createChartConfig('แพ็ค', 'sumQtyPackALL', 'sumQtyPack43ALL', 'sumQtyPack42ALL'), [createChartConfig]);
+  const byPieceConfig = useMemo(() => createChartConfig('ชิ้น', 'sumQtyPCSALL', 'sumQtyPCS43ALL', 'sumQtyPCS42ALL'), [createChartConfig]);
+  const byBahtConfig = useMemo(() => createChartConfig('บาท', 'sumBahtCNALL', 'sumBahtCN43', 'sumBahtCN42'), [createChartConfig]);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -112,7 +112,7 @@ const DashboardPage = () => {
           status={status}
           errorMessage={errorMessage}
           onRetry={handleRetry}
-          dateRangeString={dateRangeString} // Prop นี้จะส่งข้อความที่แก้ไขแล้วเข้าไปโดยตรง
+          dateRangeString={dateRangeString} 
           apiData={apiData}
           byCountConfig={byCountConfig}
           byPackConfig={byPackConfig}
@@ -125,4 +125,5 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
+
 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, Box, Typography, Paper, useTheme, Divider, ToggleButton, ToggleButtonGroup } from '@mui/material';
-import { ShowChart as LineChartIcon, BarChart as BarChartIcon, PieChart as PieChartIcon, Assessment as AssessmentIcon, AreaChart as AreaChartIcon, Info as InfoIcon } from '@mui/icons-material';
+import { Assessment as AssessmentIcon, Info as InfoIcon } from '@mui/icons-material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, ReferenceLine, Label } from 'recharts';
 import DataMessage from '../common/DataMessage';
 
@@ -16,21 +16,34 @@ const CustomLegend = ({ chartType, theme, colors, legendItems }) => {
 const CustomChartTooltip = ({ active, payload, unit }) => {
     if (active && payload && payload.length) {
         const dataPoint = payload[0].payload;
-        const displayOrder = payload.map(p => p.dataKey);
-        
+
+        // สร้าง list ของข้อมูลตามลำดับที่ต้องการ
+        const orderedPayload = [
+            payload.find(p => p.dataKey.includes('ทั้งหมด')),
+            payload.find(p => p.dataKey.includes('ขาดส่ง')),
+            payload.find(p => p.dataKey.includes('เสื่อมคุณภาพ')),
+        ].filter(Boolean);
+
         return (
             <Paper elevation={3} sx={{ p: 1.5, backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
+                {/* ลำดับที่ 1: แสดงวันที่ในรูปแบบใหม่ */}
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>{`วันที่ ${dataPoint.tooltipDate}`}</Typography>
                 <Box>
-                {displayOrder.map(dataKey => {
-                    const item = payload.find(p => p.dataKey === dataKey);
+                {/* แสดงข้อมูลลำดับ 2, 3, 4 จาก list ที่เราจัดเรียงไว้ */}
+                {orderedPayload.map(item => {
                     if (!item) return null;
-                    const name = item.name.replace(` (${unit})`, '');
+                    const name = `CN ${item.name.replace(` (${unit})`, '')}`;
                     const value = item.value.toLocaleString();
                     const color = item.color;
-                    return ( <Typography key={dataKey} variant="body2" sx={{ color: color, display: 'flex', justifyContent: 'space-between' }}><span>{name}:</span><span style={{ fontWeight: 'bold', marginLeft: '16px' }}>{`${value} (${unit})`}</span></Typography> );
+                    return (
+                        <Typography key={item.dataKey} variant="body2" sx={{ color: color, display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{name}:</span>
+                            <span style={{ fontWeight: 'bold', marginLeft: '16px' }}>{`${value} (${unit})`}</span>
+                        </Typography>
+                    );
                 })}
                 </Box>
+                {/* ลำดับที่ 5: แสดง msgSuggestion ถ้ามีข้อมูล */}
                 {dataPoint.msgSuggestion && (
                     <>
                         <Divider sx={{ my: 1 }} />
@@ -46,7 +59,6 @@ const CustomChartTooltip = ({ active, payload, unit }) => {
     return null;
 };
 
-// **[MODIFIED]** 1. รับ prop 'dateRangeString' เข้ามาโดยตรง และลบ 'dateFilter' ที่ไม่จำเป็นออก
 const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateRangeString, byCountConfig, byPackConfig, byPieceConfig, byBahtConfig }) => {
     const [chartType, setChartType] = useState('line-count');
     const theme = useTheme();
@@ -69,8 +81,6 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateRangeString,
     const PIE_COLORS = [colors.type43, colors.type42];
     const yAxisFormatter = (value) => value.toLocaleString();
     const CustomPieTooltip = ({ active, payload }) => { if (active && payload && payload.length) { const name = payload[0].name.replace(` (${unit})`, ''); const value = payload[0].value; const percent = summaryData.totalAll > 0 ? ((value / summaryData.totalAll) * 100).toFixed(2) : 0; return ( <Paper elevation={3} sx={{ p: 1.5, backgroundColor: 'rgba(255, 255, 255, 0.9)' }}><Typography variant="body2" fontWeight="bold">{`${name}: ${value.toLocaleString()} (${unit})`}</Typography><Typography variant="caption" color="text.secondary">{`คิดเป็น ${percent}%`}</Typography></Paper> ); } return null; };
-    
-    // **[REMOVED]** 2. ลบ useMemo ที่สร้าง dateRangeString ภายใน Component นี้ออกไป เพราะเราได้รับค่ามาจาก prop แล้ว
     
     const handleChartTypeChange = (event, newType) => { if (newType !== null) { setChartType(newType); } };
     
@@ -97,10 +107,8 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateRangeString,
                 <Box sx={{ textAlign: 'center', mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                         <AssessmentIcon color="primary" sx={{ fontSize: '2rem' }}/>
-                        {/* **[MODIFIED]** 3. นำ prop 'dateRangeString' มาแสดงผลที่นี่ */}
                         <Typography component="div" variant="h5" fontWeight="bold" color="primary">{dateRangeString}</Typography>
                     </Box>
-                    {/* **[REMOVED]** 4. ลบบรรทัดที่แสดงวันที่ซ้ำซ้อนออก */}
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                     <ToggleButtonGroup value={chartType} exclusive onChange={handleChartTypeChange} size="small" disabled={status !== 'success'}>
@@ -150,3 +158,4 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateRangeString,
     );
 };
 export default CnChartsCard;
+
