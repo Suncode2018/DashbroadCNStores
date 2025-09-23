@@ -46,7 +46,8 @@ const CustomChartTooltip = ({ active, payload, unit }) => {
     return null;
 };
 
-const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateFilter, byCountConfig, byPackConfig, byPieceConfig, byBahtConfig }) => {
+// **[MODIFIED]** 1. รับ prop 'dateRangeString' เข้ามาโดยตรง และลบ 'dateFilter' ที่ไม่จำเป็นออก
+const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateRangeString, byCountConfig, byPackConfig, byPieceConfig, byBahtConfig }) => {
     const [chartType, setChartType] = useState('line-count');
     const theme = useTheme();
 
@@ -68,7 +69,8 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateFilter, byCo
     const PIE_COLORS = [colors.type43, colors.type42];
     const yAxisFormatter = (value) => value.toLocaleString();
     const CustomPieTooltip = ({ active, payload }) => { if (active && payload && payload.length) { const name = payload[0].name.replace(` (${unit})`, ''); const value = payload[0].value; const percent = summaryData.totalAll > 0 ? ((value / summaryData.totalAll) * 100).toFixed(2) : 0; return ( <Paper elevation={3} sx={{ p: 1.5, backgroundColor: 'rgba(255, 255, 255, 0.9)' }}><Typography variant="body2" fontWeight="bold">{`${name}: ${value.toLocaleString()} (${unit})`}</Typography><Typography variant="caption" color="text.secondary">{`คิดเป็น ${percent}%`}</Typography></Paper> ); } return null; };
-    const dateRangeString = useMemo(() => { if (dateFilter && dateFilter.startDate && dateFilter.endDate) { const options = { day: '2-digit', month: '2-digit', year: 'numeric' }; const startDate = new Date(dateFilter.startDate).toLocaleDateString('th-TH', options); const endDate = new Date(dateFilter.endDate).toLocaleDateString('th-TH', options); return `วันที่ ${startDate} ถึง ${endDate}`; } return 'กรุณาเลือกช่วงวันที่'; }, [dateFilter]);
+    
+    // **[REMOVED]** 2. ลบ useMemo ที่สร้าง dateRangeString ภายใน Component นี้ออกไป เพราะเราได้รับค่ามาจาก prop แล้ว
     
     const handleChartTypeChange = (event, newType) => { if (newType !== null) { setChartType(newType); } };
     
@@ -79,7 +81,6 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateFilter, byCo
             const ChartWrapper = ({ children }) => ( <Box sx={{ height: 400, width: '100%', mt: 2 }}><ResponsiveContainer>{children}</ResponsiveContainer></Box> );
             const chartComponent = chartType.split('-')[0];
             switch (chartComponent) {
-                // **[MODIFIED]** Removed 'dot' prop from Line and targetValue from Tooltip
                 case 'line': return ( <ChartWrapper><LineChart data={chartData} margin={{ top: 15, right: 20, left: -10, bottom: 25 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" /><YAxis tickFormatter={yAxisFormatter} /><Tooltip content={<CustomChartTooltip unit={unit} />} /><Legend content={<CustomLegend chartType="line" theme={theme} colors={{...colors, COLOR_TARGET}} legendItems={legendItems}/>} />{unit === 'ใบ' && (<ReferenceLine y={TARGET_LINE_VALUE} stroke={COLOR_TARGET} strokeWidth={2} strokeDasharray="3 3"><Label value={`เป้าหมาย: ${TARGET_LINE_VALUE}`} position="insideTopRight" fill={COLOR_TARGET} fontSize={12} fontWeight="bold"/></ReferenceLine>)}<Line type="monotone" dataKey={dataKeys.total} stroke={theme.palette.primary.main} strokeWidth={2} activeDot={{ r: 8 }} /><Line type="monotone" dataKey={dataKeys.type43} stroke={colors.type43} /><Line type="monotone" dataKey={dataKeys.type42} stroke={colors.type42} /></LineChart></ChartWrapper> );
                 case 'area': return ( <ChartWrapper><AreaChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 25 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" /><YAxis tickFormatter={yAxisFormatter} /><Tooltip content={<CustomChartTooltip unit={unit} />} /><Legend content={<CustomLegend chartType="area" theme={theme} colors={colors} legendItems={legendItems}/>} /><Area type="monotone" dataKey={dataKeys.total} stroke={theme.palette.primary.dark} fill={theme.palette.primary.light} fillOpacity={0.3} /><Area type="monotone" dataKey={dataKeys.type43} stackId="1" stroke={colors.type43} fill={colors.type43} fillOpacity={0.6} /><Area type="monotone" dataKey={dataKeys.type42} stackId="1" stroke={colors.type42} fill={colors.type42} fillOpacity={0.6} /></AreaChart></ChartWrapper> );
                 case 'bar': return ( <ChartWrapper><BarChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 25 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="date" /><YAxis tickFormatter={yAxisFormatter} /><Tooltip content={<CustomChartTooltip unit={unit} />} /><Legend content={<CustomLegend chartType="bar" theme={theme} colors={colors} legendItems={legendItems}/>} /><Bar dataKey={dataKeys.total} fill={theme.palette.primary.main} /><Bar dataKey={dataKeys.type43} fill={colors.type43} /><Bar dataKey={dataKeys.type42} fill={colors.type42} /></BarChart></ChartWrapper> );
@@ -96,9 +97,10 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateFilter, byCo
                 <Box sx={{ textAlign: 'center', mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                         <AssessmentIcon color="primary" sx={{ fontSize: '2rem' }}/>
-                        <Typography component="div" variant="h5" fontWeight="bold" color="primary">ภาพรวมข้อมูล CN</Typography>
+                        {/* **[MODIFIED]** 3. นำ prop 'dateRangeString' มาแสดงผลที่นี่ */}
+                        <Typography component="div" variant="h5" fontWeight="bold" color="primary">{dateRangeString}</Typography>
                     </Box>
-                    <Typography variant="subtitle1" color="text.secondary" sx={{ mt: 0.5 }}>{dateRangeString}</Typography>
+                    {/* **[REMOVED]** 4. ลบบรรทัดที่แสดงวันที่ซ้ำซ้อนออก */}
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                     <ToggleButtonGroup value={chartType} exclusive onChange={handleChartTypeChange} size="small" disabled={status !== 'success'}>
@@ -148,4 +150,3 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateFilter, byCo
     );
 };
 export default CnChartsCard;
-

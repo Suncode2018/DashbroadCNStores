@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 import DateFilterCard from '../components/dashboard/DateFilterCard';
 import CnChartsCard from '../components/dashboard/CnChartsCard';
 import apiService from '../api/apiService';
@@ -45,14 +45,18 @@ const DashboardPage = () => {
     fetchCnData(dateFilter?.startDate, dateFilter?.endDate);
   }, [dateFilter, fetchCnData]);
 
+  // **[MODIFIED]** แก้ไขการสร้างข้อความในตัวแปรนี้ให้เป็นรูปแบบที่ต้องการ
   const dateRangeString = useMemo(() => {
+    const baseTitle = 'ภาพรวมข้อมูล CN CDC-บางบัวทอง';
     if (dateFilter && dateFilter.startDate && dateFilter.endDate) {
       const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
       const startDate = new Date(dateFilter.startDate).toLocaleDateString('th-TH', options);
       const endDate = new Date(dateFilter.endDate).toLocaleDateString('th-TH', options);
-      return `วันที่ ${startDate} ถึง ${endDate}`;
+      // สร้างข้อความเต็มรูปแบบส่งไปให้ CnChartsCard
+      return `${baseTitle} วันที่: ${startDate} ถึง ${endDate}`;
     }
-    return 'กรุณาเลือกช่วงวันที่';
+    // ถ้ายังไม่เลือกวัน ให้แสดงแค่หัวข้อหลัก
+    return baseTitle;
   }, [dateFilter]);
 
   const createChartConfig = (unit, totalKey, key43, key42) => {
@@ -99,10 +103,6 @@ const DashboardPage = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        แดชบอร์ดภาพรวม CDC-บางบัวทอง
-      </Typography>
-      
       <DateFilterCard onFilterChange={setDateFilter} />
 
       {status === 'loading' && <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}><CircularProgress /></Box>}
@@ -112,7 +112,7 @@ const DashboardPage = () => {
           status={status}
           errorMessage={errorMessage}
           onRetry={handleRetry}
-          dateRangeString={dateRangeString}
+          dateRangeString={dateRangeString} // Prop นี้จะส่งข้อความที่แก้ไขแล้วเข้าไปโดยตรง
           apiData={apiData}
           byCountConfig={byCountConfig}
           byPackConfig={byPackConfig}
