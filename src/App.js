@@ -42,7 +42,7 @@ function App() {
   };
 
   const testConnection = async () => {
-    const result = await apiService.testConnection();
+    const result = await apiService.request('/'); // ใช้ request ทั่วไป
     setConnectionStatus(result);
   };
 
@@ -60,7 +60,6 @@ function App() {
     }
   };
 
-  // **[NEW]** Function to handle navigation to the home/dashboard page
   const handleGoHome = () => {
     setCurrentPage('dashboard');
   };
@@ -68,7 +67,7 @@ function App() {
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'dashboard':
-        return <DashboardPage user={user} onExportRequest={() => setLoginDialogOpen(true)} />;
+        return <DashboardPage />; // User prop ไม่ได้ถูกใช้ใน DashboardPage แล้ว
       case 'api-test':
         return config.debugMode ? <ApiTestPage /> : null;
       case 'branches':
@@ -76,7 +75,7 @@ function App() {
       case 'reports':
         return ( <Box sx={{ p: 3 }}><Typography variant="h4" gutterBottom>หน้านี้กำลังพัฒนา</Typography><Alert severity="info">ฟีเจอร์นี้จะเปิดใช้งานในเร็วๆ นี้</Alert></Box> );
       default:
-        return <DashboardPage user={user} onExportRequest={() => setLoginDialogOpen(true)} />;
+        return <DashboardPage />;
     }
   };
 
@@ -89,7 +88,6 @@ function App() {
           user={user}
           onProfileClick={() => setProfileDialogOpen(true)}
           onLogout={handleLogout}
-          // **[MODIFIED]** Pass the new function as a prop
           onGoHome={handleGoHome}
         />
         

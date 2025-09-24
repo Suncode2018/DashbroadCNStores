@@ -88,8 +88,15 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateRangeString,
     const CustomPieTooltip = ({ active, payload }) => { if (active && payload && payload.length) { const name = payload[0].name.replace(` (${unit})`, ''); const value = payload[0].value; const percent = summaryData.totalAll > 0 ? ((value / summaryData.totalAll) * 100).toFixed(2) : 0; return ( <Paper elevation={3} sx={{ p: 1.5, backgroundColor: 'rgba(255, 255, 255, 0.9)' }}><Typography variant="body2" fontWeight="bold">{`${name}: ${value.toLocaleString()} (${unit})`}</Typography><Typography variant="caption" color="text.secondary">{`คิดเป็น ${percent}%`}</Typography></Paper> ); } return null; };
     
     const renderContent = () => {
-        if (status === 'error') { return <DataMessage status="error" message={errorMessage} onRetry={onRetry} />; }
-        if (status === 'empty' || status === 'initial') { return <DataMessage status="info" message="กรุณาเลือกช่วงวันที่เพื่อแสดงข้อมูล" />; }
+        // นำเงื่อนไขการแสดง Error กลับมา
+        if (status === 'error') { 
+            return <DataMessage status="error" message={errorMessage} onRetry={onRetry} />; 
+        }
+        
+        if (status === 'empty') { 
+            return <DataMessage status="info" message="ไม่พบข้อมูลในข่วงวันที่ที่เลือก" />; 
+        }
+
         if (status === 'success') {
             const ChartWrapper = ({ children }) => ( <Box sx={{ height: 400, width: '100%', mt: 2 }}><ResponsiveContainer>{children}</ResponsiveContainer></Box> );
             const chartComponent = chartType.split('-')[0];
@@ -161,5 +168,4 @@ const CnChartsCard = ({ status, apiData, errorMessage, onRetry, dateRangeString,
     );
 };
 export default CnChartsCard;
-
 
